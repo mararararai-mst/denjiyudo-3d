@@ -214,9 +214,9 @@ sun.shadow.camera.top=7; sun.shadow.camera.bottom=-5;
 scene.add(sun);
 
 /* ---------- 寸法 ---------- */
-const COIL_R=0.78, COIL_LEN=1.0;
-const MAG_LEN=1.5, MAG_R=0.19;
-const Z_NEAR=1.38;   // これ以上コイルに近づけない（＝つきぬけない）
+const COIL_R=0.78, COIL_LEN=1.34;
+const MAG_LEN=1.22, MAG_R=0.19;
+const Z_NEAR=0.05;   // コイルの中まで入る。ただし反対側へは出ない（教科書p.277の注意）
 const Z_FAR =3.85;
 const GALV_POS=new THREE.Vector3(0.35,-1.42,-2.05);
 
@@ -461,7 +461,8 @@ function refreshReadout(){
   $('rdBig').textContent = Math.abs(v)<0.04 ? '電流は流れていない' : T.current+'が流れている';
   $('rdBig').style.color = Math.abs(v)<0.04 ? '#8a8073' : (v>0?'#c2402e':'#2f6fc0');
   $('rdSub').textContent = Math.abs(v)<0.04
-    ? (S.mode==='gen'&&!S.spin ? '磁石が止まっているから' : '磁石を動かしていないから')
+    ? (moving ? 'コイルのおくでは磁界の変化が小さいから'
+              : (S.mode==='gen'&&!S.spin ? '磁石が止まっているから' : '磁石を動かしていないから'))
     : (S.vz<0 ? '磁石を近づけているから' : '磁石を遠ざけているから');
   $('rdNeedle').textContent=needleWord(v);
   $('rdTurns').textContent = S.turnsDouble ? '2倍' : '標準';
@@ -572,11 +573,18 @@ function setMode(m){
 
 /* ---------- 操作 ---------- */
 function zFromSlider(v){ return Z_NEAR + (Z_FAR-Z_NEAR)*(v/100); }
+function posWord(v){
+  const z=zFromSlider(v);
+  if(z < COIL_LEN/2 + MAG_LEN/2 - 0.25) return 'コイルの中';
+  if(z < 1.6) return 'すぐそば';
+  if(z < 2.6) return '近い';
+  return '遠い';
+}
 function sliderFromZ(z){ return Math.round((z-Z_NEAR)/(Z_FAR-Z_NEAR)*100); }
 $('posSlider').oninput=function(){
   S.auto=false; $('btnAuto').querySelector('.st').textContent='OFF'; $('btnAuto').classList.add('off');
   S.z=zFromSlider(+this.value);
-  $('posVal').textContent = (+this.value<25)?'とても近い':((+this.value<60)?'近い':'遠い');
+  $('posVal').textContent = posWord(+this.value);
 };
 $('btnAuto').onclick=function(){
   ensureAudio(); click();
@@ -738,8 +746,7 @@ addEventListener('pointermove', e=>{
   if(S.dragging){
     S.z=Math.max(Z_NEAR,Math.min(Z_FAR, S.z+screenAxisDelta(dx,dy)));
     $('posSlider').value=sliderFromZ(S.z);
-    const v=+$('posSlider').value;
-    $('posVal').textContent=(v<25)?'とても近い':((v<60)?'近い':'遠い');
+    $('posVal').textContent=posWord(+$('posSlider').value);
   }else if(dragging){
     camAz=Math.max(-1.4,Math.min(1.4,camAz-dx*0.006));
     camEl=Math.max(-0.1,Math.min(1.0,camEl+dy*0.005));
@@ -798,6 +805,7 @@ if(params.get('lenz')==='1') $('btnLenz').click();
 if(params.get('z')) S.z=Math.max(Z_NEAR,Math.min(Z_FAR,+params.get('z')));
 if(params.get('quiz')==='1') setTimeout(startQuiz,300);
 $('posSlider').value=sliderFromZ(S.z);
+$('posVal').textContent=posWord(+$('posSlider').value);
 $('spinSlider').oninput.call($('spinSlider'));
 registerLabels();
 refreshPanelRects();
