@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電磁誘導ラボ3D｜発電のしくみ（中2理科）</title>
+<meta name="description" content="棒磁石をコイルに近づけたり遠ざけたりして誘導電流をつくる3D教材。動かしている間だけ検流計の針が振れ、止めると0に戻る。巻数・磁石の強さ・極・速さを変えて確かめられる。中2理科 単元4-3 p.276-279。">
+<meta property="og:title" content="電磁誘導ラボ3D｜動かしたときだけ電流が流れる">
+<meta property="og:description" content="磁石を手で動かして誘導電流をつくるシミュレーション。止めると0に戻ることや、近づける／遠ざけるで向きが逆になることを検流計で確かめられる。">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔌</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --font-head:'Zen Maru Gothic','UD デジタル 教科書体 NK-R','Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic UI','Meiryo',sans-serif;
+    --cream:#fdf6ec; --ink:#5a4a3a;
+    --plus:#e0574f; --minus:#3f7fc9;
+  }
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--cream);
+    font-family:var(--font-head);color:var(--ink);font-weight:500;}
+  canvas{display:block;touch-action:none;}
+  .panel{position:fixed;background:rgba(255,255,255,.93);border-radius:18px;
+    box-shadow:0 4px 14px rgba(90,74,58,.15);}
+  #topbar{top:12px;left:12px;padding:9px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  #topbar h1{margin:0;font-size:16px;font-weight:900;}
+  #topbar .pg{font-size:11px;opacity:.6;}
+  .tabs{display:flex;gap:5px;}
+  .tab{border:2px solid #e8ddcf;background:#fff;border-radius:999px;padding:5px 13px;
+    font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;}
+  .tab.on{background:#5aa9a3;border-color:#5aa9a3;color:#fff;}
+
+  #readout{top:70px;left:12px;padding:9px 15px;width:246px;}
+  #rdBig{font-size:19px;font-weight:900;margin-bottom:3px;}
+  #rdSub{font-size:11.5px;opacity:.7;margin-bottom:6px;}
+  .row{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;
+    padding:3px 0;border-top:1px dashed #ebe0d0;}
+  .row .k{opacity:.65;}
+  /* 誘導電流の大きさバー（中央0で左右に伸びる） */
+  #meter{height:14px;background:#f0e8db;border-radius:999px;margin-top:7px;position:relative;overflow:hidden;}
+  #meterZero{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#cbbda8;}
+  #meterFill{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--plus);
+    border-radius:999px;transition:none;}
+  #meterLbl{display:flex;justify-content:space-between;font-size:9.5px;opacity:.6;margin-top:2px;}
+
+  #graphBox{position:fixed;left:12px;bottom:12px;width:300px;padding:8px 10px 6px;}
+  #graphBox .t{font-size:11px;font-weight:700;opacity:.7;margin-bottom:3px;}
+  #graph{width:100%;height:78px;display:block;}
+
+  #ctrl{top:70px;right:12px;width:192px;padding:10px;display:flex;flex-direction:column;gap:6px;
+    max-height:calc(100vh - 90px);overflow-y:auto;scrollbar-width:thin;}
+  #ctrl button{border:none;border-radius:12px;padding:8px 10px;font-family:var(--font-head);
+    font-size:13px;font-weight:700;color:#fff;cursor:pointer;text-align:left;flex:none;}
+  #ctrl button .st{float:right;opacity:.85;font-size:11px;}
+  #ctrl button.off{opacity:.45;}
+  #btnAuto{background:#e8768f;} #btnPole{background:#e0574f;} #btnTurns{background:#5aa9a3;}
+  #btnStrong{background:#8657c9;} #btnSpin{background:#e8768f;}
+  #btnLenz{background:#c47ba0;} #btnHint{background:#7fa8c9;} #btnQuiz{background:#e86da0;}
+  #btnView{background:#c9b8a4;}
+  .box{background:#faf3e7;border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;flex:none;}
+  .box input{width:100%;accent-color:#5aa9a3;}
+  .box .v{float:right;color:#b5527a;}
+  .devbadge{display:inline-block;background:#ffe0ea;color:#c2426e;border-radius:6px;
+    font-size:9.5px;padding:1px 5px;margin-left:4px;vertical-align:1px;}
+
+  #infobar{left:324px;right:214px;bottom:12px;padding:10px 16px;font-size:13.5px;line-height:1.7;text-wrap:pretty;}
+  #infobar b{color:#c2588a;}
+
+  #quiz{left:50%;bottom:104px;transform:translateX(-50%);padding:14px 18px;max-width:560px;
+    text-align:center;display:none;}
+  #quiz .q{font-size:15.5px;font-weight:900;margin-bottom:10px;}
+  #quiz .opts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  #quiz .opts button{border:none;border-radius:12px;padding:10px 18px;font-family:var(--font-head);
+    font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;}
+  #quiz .ans{font-size:13.5px;line-height:1.75;margin-top:10px;display:none;text-align:left;text-wrap:pretty;}
+  #qClose{background:#c9b8a4;border:none;border-radius:12px;padding:9px 20px;margin-top:8px;
+    font-family:var(--font-head);font-size:14px;font-weight:700;color:#fff;cursor:pointer;display:none;}
+
+  #start{position:fixed;inset:0;background:rgba(253,246,236,.96);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:15px;z-index:10;padding:20px;}
+  #start h1{font-size:clamp(21px,4vw,32px);margin:0;color:#3f8f89;font-weight:900;}
+  #start p{margin:0;font-size:15px;line-height:1.95;text-align:center;}
+  #start button{border:none;border-radius:999px;padding:14px 44px;font-family:var(--font-head);
+    font-size:19px;font-weight:900;color:#fff;background:#5aa9a3;cursor:pointer;box-shadow:0 6px 0 #418680;}
+  #start button:active{transform:translateY(4px);box-shadow:0 2px 0 #418680;}
+  #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;
+    border-radius:999px;padding:9px 22px;font-size:14px;font-weight:700;
+    box-shadow:0 4px 14px rgba(90,74,58,.2);opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;}
+  @media (max-height:700px){
+    #infobar{padding:7px 14px;font-size:12.5px;line-height:1.55;}
+    #graphBox{width:250px;} #graph{height:62px;}
+    #topbar{padding:6px 12px;}
+  }
+  @media (max-width:900px){
+    #graphBox{width:210px;padding:6px 8px 4px;} #graph{height:56px;}
+    #infobar{left:232px;}
+  }
+  @media (max-width:760px){
+    #ctrl{width:140px;padding:8px;gap:5px;top:64px;max-height:calc(100vh - 84px);}
+    #ctrl button{font-size:11.5px;padding:7px 8px;}
+    #ctrl button .st{font-size:9.5px;}
+    .box{font-size:10.5px;padding:5px 8px;}
+    #readout{width:166px;padding:7px 10px;top:60px;} #rdBig{font-size:15px;} .row{font-size:11px;}
+    #graphBox{width:150px;} #graph{height:46px;} #graphBox .t{font-size:9.5px;}
+    #infobar{left:170px;right:162px;font-size:11.5px;line-height:1.5;padding:7px 11px;}
+    #topbar{padding:5px 10px;} #topbar h1{font-size:13px;} #topbar .pg{display:none;}
+    .tab{font-size:11.5px;padding:4px 10px;}
+    #quiz{max-width:94vw;padding:11px 13px;} #quiz .q{font-size:13.5px;}
+    #quiz .opts button{font-size:13px;padding:8px 13px;}
+  }
+</style>
+</head>
+<body>
+<div id="start">
+  <h1>🔌 電磁誘導ラボ3D</h1>
+  <p>コイルに棒磁石を<b>近づけたり、遠ざけたり</b>してみよう。<br>
+  検流計の針はどうなる？　<b>そして、止めたときは？</b><br>
+  動かし方を変えて、電流が流れる条件を見つけよう。</p>
+  <button id="startBtn">はじめる</button>
+</div>
+
+<div class="panel" id="topbar">
+  <h1>🔌 電磁誘導ラボ3D</h1>
+  <div class="tabs">
+    <button class="tab on" data-mode="move">磁石を動かす</button>
+    <button class="tab" data-mode="gen">発電機</button>
+  </div>
+  <span class="pg">中2理科 p.276-279</span>
+</div>
+
+<div class="panel" id="readout">
+  <div id="rdBig">電流は流れていない</div>
+  <div id="rdSub">磁石を動かしていないから</div>
+  <div class="row"><span class="k">検流計の針</span><span id="rdNeedle">中央（0）</span></div>
+  <div class="row"><span class="k">コイルの巻数</span><span id="rdTurns">標準</span></div>
+  <div class="row"><span class="k">磁石</span><span id="rdMag">N極が手前・ふつう</span></div>
+  <div id="meter"><div id="meterZero"></div><div id="meterFill"></div></div>
+  <div id="meterLbl"><span>－側</span><span>0</span><span>＋側</span></div>
+</div>
+
+<div class="panel" id="graphBox">
+  <div class="t">誘導電流の変化（時間 →）</div>
+  <canvas id="graph" width="600" height="156"></canvas>
+</div>
+
+<div class="panel" id="ctrl">
+  <div class="box">磁石の位置（手で動かす）<span class="v" id="posVal">遠い</span><br>
+    <input type="range" id="posSlider" min="0" max="100" value="100" step="1"></div>
+  <button id="btnAuto">🔁 自動で出し入れ <span class="st">OFF</span></button>
+  <button id="btnPole">🧲 磁石の極を逆に</button>
+  <button id="btnTurns">🌀 巻数 <span class="st">標準</span></button>
+  <button id="btnStrong">💪 磁石の強さ <span class="st">ふつう</span></button>
+  <button id="btnSpin">⚡ 磁石を回す <span class="st">停止中</span></button>
+  <div class="box">回す速さ <span class="v" id="spinVal">ふつう</span><br>
+    <input type="range" id="spinSlider" min="1" max="10" value="5" step="1"></div>
+  <button id="btnLenz">🔄 誘導電流の向き<span class="devbadge">発展</span> <span class="st">OFF</span></button>
+  <button id="btnHint">💡 動かし方のヒント</button>
+  <button id="btnQuiz">❓ たしかめクイズ</button>
+  <button id="btnView">🎥 視点リセット</button>
+</div>
+
+<div class="panel" id="infobar"><span id="infoText"></span></div>
+
+<div class="panel" id="quiz">
+  <div class="q" id="quizQ"></div>
+  <div class="opts" id="quizOpts"></div>
+  <div class="ans" id="quizAns"></div>
+  <button id="qClose">とじる</button>
+</div>
+<div id="toast"></div>
+
+<script src="three.min.js"></script>
+<script>
+'use strict';
+/* ==========================================================================
+   電磁誘導ラボ3D  c2-4-3-c（中2理科 単元4-3 p.276-279）
+   教科書に合わせた点：
+   ・検流計は真ん中が0。＋端子から電流が流れこむと右、－端子からだと左に振れる（p.277）
+   ・磁石は「コイルをつきぬけないように」動かす（p.277 実験8の注意）
+   ・近づけるときと遠ざけるときで誘導電流の向きは逆（p.278）
+   ・磁石の極を変えても向きは逆。巻数が多い/強い磁石だと大きい（p.278）
+   ・止めているときは流れない（p.278 図1の真ん中）
+   ・誘導電流の向き（レンツの法則）は「発展・高校」（p.278）
+   ========================================================================== */
+const TERMS = {
+  induction:'電磁誘導', current:'誘導電流', galv:'検流計',
+  coil:'コイル', magnet:'棒磁石', turns:'巻数',
+  lenz:'誘導電流の向き'
+};
+const T = TERMS;
+
+const VW=()=>Math.max(1, innerWidth||1280), VH=()=>Math.max(1, innerHeight||800);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(VW(),VH());
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xfdf6ec);
+const camera=new THREE.PerspectiveCamera(45, VW()/VH(), .1, 100);
+const camHome={az:0.86, el:0.24, dist:9.4};
+let camAz=camHome.az, camEl=camHome.el, camDist=camHome.dist;
+const camTarget=new THREE.Vector3(0.05,-0.42,0.35);
+
+scene.add(new THREE.HemisphereLight(0xfffaf0,0xc9b8a4,0.85));
+const sun=new THREE.DirectionalLight(0xfff2dc,1.0);
+sun.position.set(4,9,6); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-7; sun.shadow.camera.right=7;
+sun.shadow.camera.top=7; sun.shadow.camera.bottom=-5;
+scene.add(sun);
+
+/* ---------- 寸法 ---------- */
+const COIL_R=0.78, COIL_LEN=1.0;
+const MAG_LEN=1.5, MAG_R=0.19;
+const Z_NEAR=1.38;   // これ以上コイルに近づけない（＝つきぬけない）
+const Z_FAR =3.85;
+const GALV_POS=new THREE.Vector3(0.35,-1.42,-2.05);
+
+/* ---------- 状態 ---------- */
+const S={
+  mode:'move',
+  z:Z_FAR, vz:0, prevZ:Z_FAR,
+  pole:1,            // +1: N極がコイル側 / -1: S極がコイル側
+  turnsDouble:false, // 巻数2倍
+  strong:false,      // 強い磁石
+  auto:false, autoT:0,
+  spin:false, spinSpeed:5, spinAngle:0,
+  emf:0, needle:0,
+  showLenz:false,
+  quiz:null, dragging:false
+};
+function turnsN(){ return S.turnsDouble ? 2 : 1; }
+function magStrength(){ return S.strong ? 1.8 : 1.0; }
+
+/* ---------- 誘導起電力（ファラデーの法則） ----------
+   Φ(z) ∝ 強さ×極 /(1+(z/a)^2)^{3/2}     V = -N dΦ/dt = -N (dΦ/dz)(dz/dt)  */
+const FLUX_A=1.25;
+function dFluxdz(z){
+  const u=z/FLUX_A;
+  return -3*magStrength()*S.pole*z / (FLUX_A*FLUX_A*Math.pow(1+u*u,2.5));
+}
+function computeEmf(dt){
+  if(S.mode==='gen'){
+    // 発電機：磁石が回転してコイルに近づいたり遠ざかったりする（p.278 まちなか科学）
+    const w=(0.6+S.spinSpeed*0.55);
+    if(S.spin) S.spinAngle+=w*dt;
+    const zEq=2.15+1.0*Math.cos(S.spinAngle);
+    const vEq=S.spin ? -1.0*Math.sin(S.spinAngle)*w : 0;
+    S.z=zEq; S.vz=vEq;
+  }else{
+    S.vz = dt>0 ? (S.z-S.prevZ)/dt : 0;
+  }
+  S.prevZ=S.z;
+  const raw = -turnsN()*dFluxdz(S.z)*S.vz;
+  // 見やすいスケールに整える
+  return raw*1.9;
+}
+
+/* ---------- 材質 ---------- */
+const matCopper=new THREE.MeshStandardMaterial({color:0xc97b4a,roughness:.34,metalness:.62});
+const matN=new THREE.MeshStandardMaterial({color:0xd0304a,roughness:.45});
+const matS=new THREE.MeshStandardMaterial({color:0x2f6fc0,roughness:.45});
+const matBody=new THREE.MeshStandardMaterial({color:0x8c9299,roughness:.6,metalness:.25});
+const matDark=new THREE.MeshStandardMaterial({color:0x6c737a,roughness:.6});
+const matWire=new THREE.MeshStandardMaterial({color:0xb5763f,roughness:.4,metalness:.5});
+
+/* ---------- ラベル ---------- */
+function makeLabel(text,color,size,bold){
+  const fs=64,pad=8;
+  const c=document.createElement('canvas'); let g=c.getContext('2d');
+  g.font=(bold?'900 ':'700 ')+fs+'px "Zen Maru Gothic", sans-serif';
+  c.width=Math.ceil(g.measureText(text).width)+pad*2; c.height=fs+pad*2;
+  g=c.getContext('2d');
+  g.font=(bold?'900 ':'700 ')+fs+'px "Zen Maru Gothic", sans-serif';
+  g.textAlign='center'; g.textBaseline='middle';
+  g.lineWidth=9; g.strokeStyle='rgba(253,246,236,.95)';
+  g.strokeText(text,c.width/2,c.height/2);
+  g.fillStyle=color; g.fillText(text,c.width/2,c.height/2);
+  const tx=new THREE.CanvasTexture(c); tx.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthTest:false,transparent:true}));
+  const h=size||0.28; sp.scale.set(h*c.width/c.height,h,1); sp.renderOrder=20;
+  return sp;
+}
+function makeArrow(len,color,headR){
+  const g=new THREE.Group();
+  const sh=new THREE.Mesh(new THREE.CylinderGeometry(headR*0.38,headR*0.38,len,10),
+    new THREE.MeshStandardMaterial({color,roughness:.4}));
+  sh.position.y=len/2;
+  const hd=new THREE.Mesh(new THREE.ConeGeometry(headR,headR*2.1,12),
+    new THREE.MeshStandardMaterial({color,roughness:.4}));
+  hd.position.y=len+headR*1.05;
+  g.add(sh,hd); g.userData.len=len; return g;
+}
+function aimArrow(g,from,dir,len){
+  const d=dir.clone(); if(d.lengthSq()<1e-9){g.visible=false;return;}
+  d.normalize(); g.visible=true; g.position.copy(from);
+  g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d);
+  g.scale.set(1,len/g.userData.len,1);
+}
+
+/* ---------- 台 ---------- */
+{
+  const base=new THREE.Mesh(new THREE.BoxGeometry(8.2,0.16,4.2),
+    new THREE.MeshStandardMaterial({color:0xefe6d6,roughness:.92}));
+  base.position.y=-2.18; base.receiveShadow=true; scene.add(base);
+}
+
+/* ---------- コイル ---------- */
+const coilGroup=new THREE.Group(); scene.add(coilGroup);
+let coilMesh=null;
+function buildCoil(){
+  if(coilMesh){ coilMesh.geometry.dispose(); coilGroup.remove(coilMesh); }
+  const n = S.turnsDouble ? 14 : 7;
+  class Helix extends THREE.Curve{
+    getPoint(t){
+      const a=t*n*Math.PI*2;
+      return new THREE.Vector3(COIL_R*Math.cos(a), COIL_R*Math.sin(a), -COIL_LEN/2+t*COIL_LEN);
+    }
+  }
+  coilMesh=new THREE.Mesh(new THREE.TubeGeometry(new Helix(), n*26, 0.052, 8), matCopper);
+  coilMesh.castShadow=true;
+  coilGroup.add(coilMesh);
+}
+buildCoil();
+const lblCoil=makeLabel(T.coil,'#a5622f',0.27); scene.add(lblCoil);
+
+/* ---------- 棒磁石 ---------- */
+const magGroup=new THREE.Group(); scene.add(magGroup);
+const magNear=new THREE.Mesh(new THREE.CylinderGeometry(MAG_R,MAG_R,MAG_LEN/2,20), matN);
+const magFar =new THREE.Mesh(new THREE.CylinderGeometry(MAG_R,MAG_R,MAG_LEN/2,20), matS);
+magNear.rotation.x=Math.PI/2; magFar.rotation.x=Math.PI/2;
+magNear.position.z=-MAG_LEN/4; magFar.position.z=MAG_LEN/4;
+magNear.castShadow=magFar.castShadow=true;
+magGroup.add(magNear,magFar);
+const poleNearN=makeLabel('N','#d0304a',0.42,true), poleNearS=makeLabel('S','#2f6fc0',0.42,true);
+const poleFarN =makeLabel('N','#d0304a',0.42,true), poleFarS =makeLabel('S','#2f6fc0',0.42,true);
+scene.add(poleNearN,poleNearS,poleFarN,poleFarS);
+const lblHand=makeLabel('手で動かす','#5a4a3a',0.24); scene.add(lblHand);
+
+/* ---------- 検流計 ---------- */
+const galv=new THREE.Group(); galv.position.copy(GALV_POS); scene.add(galv);
+let needleMesh=null;
+{
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.25,0.62), matBody);
+  body.castShadow=true; galv.add(body);
+  const face=new THREE.Mesh(new THREE.CircleGeometry(0.66,32),
+    new THREE.MeshStandardMaterial({color:0xfffdf6,roughness:.5}));
+  face.position.set(0,0.1,0.32); galv.add(face);
+  const bezel=new THREE.Mesh(new THREE.TorusGeometry(0.67,0.038,10,36),
+    new THREE.MeshStandardMaterial({color:0x5f666d,roughness:.5,metalness:.4}));
+  bezel.position.set(0,0.1,0.33); galv.add(bezel);
+  // 目盛り
+  for(let i=-4;i<=4;i++){
+    const a=i*0.19;
+    const tick=new THREE.Mesh(new THREE.BoxGeometry(0.022,(i===0?0.16:0.1),0.02), matDark);
+    tick.position.set(Math.sin(a)*0.53, 0.1+Math.cos(a)*0.53, 0.335);
+    tick.rotation.z=-a; galv.add(tick);
+  }
+  needleMesh=new THREE.Mesh(new THREE.BoxGeometry(0.032,0.62,0.022),
+    new THREE.MeshStandardMaterial({color:0xd0304a,roughness:.5}));
+  needleMesh.position.set(0,0.1,0.35);
+  needleMesh.geometry.translate(0,0.28,0);
+  galv.add(needleMesh);
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.05,14), matDark);
+  hub.rotation.x=Math.PI/2; hub.position.set(0,0.1,0.36); galv.add(hub);
+  // ＋端子と－端子（教科書p.277：＋から流れこむと右、－からだと左）
+  for(const [x,mat] of [[0.62,new THREE.MeshStandardMaterial({color:0xe0574f})],
+                        [-0.62,new THREE.MeshStandardMaterial({color:0x3f7fc9})]]){
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.16,14), mat);
+    t.rotation.x=Math.PI/2; t.position.set(x,-0.46,0.34); galv.add(t);
+  }
+}
+const lblGalv=makeLabel(T.galv,'#5a4a3a',0.27);
+const lblPlus=makeLabel('＋端子','#c2402e',0.22);
+const lblMinus=makeLabel('－端子','#2f6fc0',0.22);
+scene.add(lblGalv,lblPlus,lblMinus);
+
+/* ---------- 導線（コイル→検流計） ---------- */
+{
+  for(const sgn of [1,-1]){
+    const pts=[
+      new THREE.Vector3(sgn*0.26, -COIL_R*0.86, -COIL_LEN/2-0.02),
+      new THREE.Vector3(GALV_POS.x*0.6+sgn*0.42, -1.15, -1.0),
+      new THREE.Vector3(GALV_POS.x+sgn*0.62, GALV_POS.y-0.42, GALV_POS.z+0.2)
+    ];
+    const tube=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),30,0.042,7), matWire);
+    scene.add(tube);
+  }
+}
+
+/* ---------- 発展：レンツの法則の矢印 ---------- */
+const lenzGroup=new THREE.Group(); scene.add(lenzGroup);
+const lenzMag=makeArrow(0.62,0x8657c9,0.085);   // 磁石の磁界
+const lenzInd=makeArrow(0.62,0x2ea06b,0.085);   // 誘導電流がつくる磁界
+lenzGroup.add(lenzMag,lenzInd);
+const lblLenzM=makeLabel('磁石の磁界','#7c4fc0',0.22);
+const lblLenzI=makeLabel('誘導電流の磁界','#25865a',0.22);
+scene.add(lblLenzM,lblLenzI);
+
+/* ---------- 音 ---------- */
+let actx=null;
+function ensureAudio(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); }
+function blip(f,d,g0,type){
+  if(!actx) return;
+  const t0=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();
+  o.type=type||'sine'; o.frequency.value=f;
+  g.gain.setValueAtTime(g0,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+d);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0+d+0.05);
+}
+function ding(){blip(1320,0.45,0.14);blip(1980,0.35,0.05);}
+function buzz(){blip(170,0.24,0.11,'square');}
+function click(){blip(660,0.07,0.07,'triangle');}
+
+/* ---------- グラフ ---------- */
+const gcv=document.getElementById('graph'), gctx=gcv.getContext('2d');
+const HIST=[];
+function drawGraph(){
+  const w=gcv.width,h=gcv.height;
+  gctx.clearRect(0,0,w,h);
+  gctx.strokeStyle='#e6dccb'; gctx.lineWidth=2;
+  gctx.beginPath(); gctx.moveTo(0,h/2); gctx.lineTo(w,h/2); gctx.stroke();
+  if(HIST.length<2) return;
+  gctx.lineWidth=3; gctx.lineJoin='round';
+  gctx.beginPath();
+  for(let i=0;i<HIST.length;i++){
+    const x=w*i/(HIST.length-1);
+    const y=h/2 - Math.max(-1,Math.min(1,HIST[i]))*(h/2-6);
+    i? gctx.lineTo(x,y) : gctx.moveTo(x,y);
+  }
+  const last=HIST[HIST.length-1];
+  gctx.strokeStyle = last>=0 ? '#e0574f' : '#3f7fc9';
+  gctx.stroke();
+}
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+function toast(m){const e=$('toast');e.textContent=m;e.style.opacity=1;
+  clearTimeout(toast._t);toast._t=setTimeout(()=>e.style.opacity=0,2400);}
+const INFO={
+  move:`${T.magnet}を${T.coil}に近づけたり遠ざけたりすると、コイルの内部の${'磁界'}が変化して`
+      +`${T.current}が流れる。これが<b>${T.induction}</b>。<b>止めると流れない</b>。`
+      +`近づけるときと遠ざけるときで向きは逆になる。`,
+  gen:`磁石を回転させると、${T.coil}に近づいたり遠ざかったりをくり返すので、`
+      +`${T.current}の向きが<b>交互に入れかわる</b>。これが発電機のしくみ。`
+      +`自転車のライトも同じで、<b>ゆっくり回すと点滅する</b>。`
+};
+function needleWord(v){
+  const a=Math.abs(v);
+  if(a<0.04) return '中央（0）';
+  const side = v>0 ? '右' : '左';
+  const size = a<0.3?'少し':(a<0.7?'':'大きく');
+  return size+side+'にふれる';
+}
+function refreshReadout(){
+  const v=S.needle;
+  const moving = Math.abs(S.vz)>0.02;
+  $('rdBig').textContent = Math.abs(v)<0.04 ? '電流は流れていない' : T.current+'が流れている';
+  $('rdBig').style.color = Math.abs(v)<0.04 ? '#8a8073' : (v>0?'#c2402e':'#2f6fc0');
+  $('rdSub').textContent = Math.abs(v)<0.04
+    ? (S.mode==='gen'&&!S.spin ? '磁石が止まっているから' : '磁石を動かしていないから')
+    : (S.vz<0 ? '磁石を近づけているから' : '磁石を遠ざけているから');
+  $('rdNeedle').textContent=needleWord(v);
+  $('rdTurns').textContent = S.turnsDouble ? '2倍' : '標準';
+  $('rdMag').textContent = (S.pole>0?'N極が手前':'S極が手前')+'・'+(S.strong?'強力':'ふつう');
+  const pct=Math.max(-1,Math.min(1,v))*50;
+  const f=$('meterFill');
+  f.style.background = v>=0 ? 'var(--plus)' : 'var(--minus)';
+  if(pct>=0){ f.style.left='50%'; f.style.width=pct+'%'; }
+  else{ f.style.left=(50+pct)+'%'; f.style.width=(-pct)+'%'; }
+}
+
+/* ---------- シーン更新 ---------- */
+function updateScene(dt){
+  // 磁石
+  magGroup.position.set(0,0,S.z);
+  magNear.material = S.pole>0 ? matN : matS;
+  magFar.material  = S.pole>0 ? matS : matN;
+  for(const sp of [poleNearN,poleNearS]) sp.position.set(0,0.42,S.z-MAG_LEN/4);
+  for(const sp of [poleFarN,poleFarS])   sp.position.set(0,0.42,S.z+MAG_LEN/4);
+  poleNearN.visible = (S.pole>0); poleNearS.visible = (S.pole<0);
+  poleFarS.visible  = (S.pole>0); poleFarN.visible  = (S.pole<0);
+  lblHand.position.set(0,-0.62,S.z+MAG_LEN/2+0.3);
+  lblHand.visible = (S.mode==='move');
+  lblCoil.position.set(COIL_R+0.55,0.62,0);
+  lblGalv.position.copy(GALV_POS).add(new THREE.Vector3(0,0.95,0.1));
+  lblPlus.position.copy(GALV_POS).add(new THREE.Vector3(0.72,-0.72,0.3));
+  lblMinus.position.copy(GALV_POS).add(new THREE.Vector3(-0.78,-0.72,0.3));
+  // 針（実際の検流計のように少し遅れて動く）
+  needleMesh.rotation.z = -S.needle*0.78;
+  // 発展：レンツの法則
+  const show = S.showLenz && Math.abs(S.needle)>0.05;
+  lenzGroup.visible=show; lblLenzM.visible=show; lblLenzI.visible=show;
+  if(show){
+    // 磁石の磁界：N極から出る向き（コイルの軸方向）
+    const mdir=new THREE.Vector3(0,0,-S.pole);
+    aimArrow(lenzMag,new THREE.Vector3(0.0,0.95,COIL_LEN/2+0.35),mdir,0.62);
+    // 誘導電流がつくる磁界：変化をさまたげる向き（近づくとき逆、遠ざかるとき同じ）
+    const idir=mdir.clone().multiplyScalar(S.vz<0 ? -1 : 1);
+    aimArrow(lenzInd,new THREE.Vector3(0.0,-0.95,COIL_LEN/2+0.35),idir,0.62);
+    lblLenzM.position.set(0.0,1.32,COIL_LEN/2+0.35);
+    lblLenzI.position.set(0.0,-1.32,COIL_LEN/2+0.35);
+  }
+  refreshReadout();
+}
+
+/* ---------- ラベル自動退避 ---------- */
+const LABEL_ORDER=[];
+function registerLabels(){
+  LABEL_ORDER.length=0;
+  [poleNearN,poleNearS,poleFarN,poleFarS,lblCoil,lblGalv,lblHand,lblPlus,lblMinus,lblLenzM,lblLenzI]
+    .forEach(sp=>{sp.material.transparent=true; sp.userData.op=1; LABEL_ORDER.push(sp);});
+}
+let panelRects=[];
+function refreshPanelRects(){
+  panelRects=['topbar','readout','ctrl','infobar','graphBox'].map(id=>{
+    const el=$(id); if(!el||el.style.display==='none') return null;
+    const r=el.getBoundingClientRect();
+    return (r.width>0&&r.height>0)?{x:r.left,y:r.top,w:r.width,h:r.height}:null;
+  }).filter(Boolean);
+}
+const _cr=new THREE.Vector3(),_cu=new THREE.Vector3(),_cf=new THREE.Vector3();
+function labelRect(sp,W,H){
+  const wp=sp.getWorldPosition(new THREE.Vector3());
+  const c=wp.clone().project(camera);
+  const r=wp.clone().addScaledVector(_cr,sp.scale.x/2).project(camera);
+  const u=wp.clone().addScaledVector(_cu,sp.scale.y/2).project(camera);
+  const cx=(c.x*.5+.5)*W, cy=(-c.y*.5+.5)*H;
+  const hw=Math.abs((r.x*.5+.5)*W-cx), hh=Math.abs((-u.y*.5+.5)*H-cy);
+  return {x:cx-hw,y:cy-hh,w:2*hw,h:2*hh,behind:c.z>1};
+}
+function boxOverlap(a,b){
+  const w=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+  const h=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
+  return Math.max(0,w)*Math.max(0,h);
+}
+function updateLabelVisibility(dt){
+  const W=renderer.domElement.clientWidth||VW(), H=renderer.domElement.clientHeight||VH();
+  camera.matrixWorld.extractBasis(_cr,_cu,_cf);
+  const placed=[];
+  for(const sp of LABEL_ORDER){
+    if(!sp.visible){ sp.userData.op=0; sp.material.opacity=0; continue; }
+    const r=labelRect(sp,W,H);
+    const ok=!r.behind && r.x>=0 && r.y>=0 && r.x+r.w<=W && r.y+r.h<=H
+      && !panelRects.some(p=>boxOverlap(r,p)>6)
+      && !placed.some(q=>boxOverlap(r,q)>6);
+    sp.userData.op += ((ok?1:0)-sp.userData.op)*Math.min(1,dt*9);
+    sp.material.opacity=sp.userData.op;
+    if(ok) placed.push(r);
+  }
+}
+
+/* ---------- モード ---------- */
+function setMode(m){
+  closeQuiz();
+  S.mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.mode===m));
+  $('infoText').innerHTML=INFO[m];
+  const isMove=(m==='move');
+  $('posSlider').parentElement.style.display=isMove?'':'none';
+  $('btnAuto').style.display=isMove?'':'none';
+  $('btnSpin').style.display=isMove?'none':'';
+  $('spinSlider').parentElement.style.display=isMove?'none':'';
+  if(isMove){ S.spin=false; }
+  else { S.auto=false; $('btnAuto').querySelector('.st').textContent='OFF'; $('btnAuto').classList.add('off'); }
+  HIST.length=0;
+  updateScene(0);
+}
+
+/* ---------- 操作 ---------- */
+function zFromSlider(v){ return Z_NEAR + (Z_FAR-Z_NEAR)*(v/100); }
+function sliderFromZ(z){ return Math.round((z-Z_NEAR)/(Z_FAR-Z_NEAR)*100); }
+$('posSlider').oninput=function(){
+  S.auto=false; $('btnAuto').querySelector('.st').textContent='OFF'; $('btnAuto').classList.add('off');
+  S.z=zFromSlider(+this.value);
+  $('posVal').textContent = (+this.value<25)?'とても近い':((+this.value<60)?'近い':'遠い');
+};
+$('btnAuto').onclick=function(){
+  ensureAudio(); click();
+  S.auto=!S.auto;
+  this.querySelector('.st').textContent=S.auto?'ON':'OFF';
+  this.classList.toggle('off',!S.auto);
+};
+$('btnPole').onclick=()=>{ ensureAudio(); click(); S.pole*=-1;
+  toast('磁石の極を入れかえた'); updateScene(0); };
+$('btnTurns').onclick=function(){
+  ensureAudio(); click();
+  S.turnsDouble=!S.turnsDouble; buildCoil();
+  this.querySelector('.st').textContent=S.turnsDouble?'2倍':'標準';
+  toast(S.turnsDouble?'巻数を2倍にした':'巻数を標準にもどした');
+  updateScene(0);
+};
+$('btnStrong').onclick=function(){
+  ensureAudio(); click();
+  S.strong=!S.strong;
+  this.querySelector('.st').textContent=S.strong?'強力':'ふつう';
+  magNear.scale.setScalar(S.strong?1.18:1); magFar.scale.setScalar(S.strong?1.18:1);
+  toast(S.strong?'強い磁石に変えた':'ふつうの磁石にもどした');
+  updateScene(0);
+};
+$('btnSpin').onclick=function(){
+  ensureAudio(); click();
+  S.spin=!S.spin;
+  this.querySelector('.st').textContent=S.spin?'回転中':'停止中';
+  this.classList.toggle('off',!S.spin);
+};
+$('spinSlider').oninput=function(){
+  S.spinSpeed=+this.value;
+  $('spinVal').textContent=['とても おそい','おそい','おそい','ふつう','ふつう','すこし 速い','速い','速い','とても 速い','最速'][this.value-1];
+};
+$('btnLenz').onclick=function(){
+  S.showLenz=!S.showLenz;
+  this.querySelector('.st').textContent=S.showLenz?'ON':'OFF';
+  this.classList.toggle('off',!S.showLenz);
+  if(S.showLenz) toast('コイルの磁界の変化をさまたげる向きに流れる（発展）');
+  updateScene(0);
+};
+$('btnHint').onclick=()=>{
+  ensureAudio();
+  toast('磁石をつかんで前後にドラッグ／スライダーでも動かせる');
+};
+$('btnView').onclick=()=>{ camAz=camHome.az; camEl=camHome.el; userZoomed=false; autoFit(); };
+$('startBtn').onclick=()=>{ ensureAudio(); $('start').style.display='none'; };
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{ ensureAudio(); click(); setMode(t.dataset.mode); };
+});
+
+/* ---------- クイズ ---------- */
+const QUIZ=[
+  {q:`磁石を${T.coil}の中に入れたまま<b>止めている</b>とき、${T.galv}の針はどうなる？`,
+   opts:['中央（0）のまま','右にふれ続ける','左にふれ続ける','行ったり来たりする'], ans:0,
+   exp:`${T.induction}は<b>磁界が変化しているとき</b>だけ起こる。止めていると変化がないので電流は流れない（教科書p.278 図1）。`},
+  {q:`磁石を近づけたときに右にふれた。<b>遠ざける</b>とどうなる？`,
+   opts:['左にふれる','同じく右にふれる','ふれない','2倍ふれる'], ans:0,
+   exp:`近づけるときと遠ざけるときでは、流れる${T.current}の向きは<b>逆</b>になる。`},
+  {q:`磁石の<b>極を逆</b>にして、同じように近づけると？`,
+   opts:['逆の向きにふれる','同じ向きにふれる','ふれない','2倍ふれる'], ans:0,
+   exp:`磁石の極を変えても、流れる${T.current}の向きは<b>逆</b>になる（教科書p.278）。`},
+  {q:`${T.current}をもっと大きくするには、どうすればいい？`,
+   opts:['巻数を増やす・強い磁石・速く動かす','磁石を止める','コイルを小さくする','磁石を遠くに置く'], ans:0,
+   exp:`${T.current}は<b>コイルの巻数が多いほど、磁界の変化が大きいほど</b>大きくなる。速く動かすほど変化が大きい。`},
+  {q:`${T.galv}の＋端子から電流が流れこむと、針はどちらにふれる？`,
+   opts:['右','左','動かない','上'], ans:0,
+   exp:`${T.galv}は真ん中が0で、<b>＋端子から流れこむと右</b>、－端子から流れこむと左にふれる（教科書p.277）。`},
+  {q:'自転車のライトを、ペダルをゆっくりこいで光らせるとどうなる？',
+   opts:['点滅する','明るいまま','消えたまま','色が変わる'], ans:0,
+   exp:`磁石が近づくときと遠ざかるときで向きが変わり、<b>向きが変わる瞬間は電流が流れない</b>。ゆっくりだとそれが見えて点滅する（教科書p.278）。`},
+];
+let quizPool=[];
+function startQuiz(){
+  if(quizPool.length===0) quizPool=QUIZ.map((_,i)=>i).sort(()=>Math.random()-0.5);
+  const q=QUIZ[quizPool.pop()];
+  S.quiz={q,done:false};
+  $('quizQ').innerHTML=q.q;
+  const opts=$('quizOpts'); opts.innerHTML='';
+  q.opts.forEach((label,i)=>{
+    const b=document.createElement('button');
+    b.textContent=label;
+    b.style.background=['#5aa9a3','#e8768f','#e0a020','#8657c9'][i%4];
+    b.onclick=()=>answerQuiz(i);
+    opts.appendChild(b);
+  });
+  $('quizAns').style.display='none'; opts.style.display='flex';
+  $('qClose').style.display='none'; $('quiz').style.display='block';
+}
+function answerQuiz(i){
+  if(!S.quiz||S.quiz.done) return;
+  S.quiz.done=true;
+  const ok=i===S.quiz.q.ans;
+  const el=$('quizAns');
+  el.innerHTML=(ok?'⭕ <b>せいかい！</b><br>':'❌ <b>ざんねん…</b> 正解は「'+S.quiz.q.opts[S.quiz.q.ans]+'」<br>')+S.quiz.q.exp;
+  el.style.display='block';
+  $('quizOpts').style.display='none';
+  $('qClose').style.display='inline-block';
+  ok?ding():buzz();
+}
+function closeQuiz(){ S.quiz=null; $('quiz').style.display='none'; }
+$('qClose').onclick=closeQuiz;
+$('btnQuiz').onclick=()=>{ ensureAudio(); startQuiz(); };
+
+/* ---------- カメラ＋磁石のドラッグ ---------- */
+let dragging=false,lastX=0,lastY=0;
+const touches=new Map(); let pinchPrev=0;
+let userZoomed=false;
+const FIT_H=6.6, FIT_W=8.6;
+function autoFit(){
+  if(userZoomed) return;
+  const vh=2*Math.tan(camera.fov*Math.PI/360);
+  const asp=(isFinite(camera.aspect)&&camera.aspect>0)?camera.aspect:VW()/VH();
+  const d=Math.max(camHome.dist,FIT_H/vh,FIT_W/(vh*Math.max(asp,0.35)));
+  if(isFinite(d)) camDist=Math.min(22,d);
+}
+function pinchSpan(){const a=[...touches.values()];
+  return a.length<2?0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);}
+function setDist(d){ camDist=Math.max(4.5,Math.min(22,d)); }
+const raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2();
+function pickMagnet(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  ndc.x=((e.clientX-rect.left)/rect.width)*2-1;
+  ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(ndc,camera);
+  return raycaster.intersectObjects([magNear,magFar],false).length>0;
+}
+/* 画面上のドラッグ量を、コイルの軸(z)方向の移動量に変換する */
+function screenAxisDelta(dx,dy){
+  const p0=new THREE.Vector3(0,0,S.z).project(camera);
+  const p1=new THREE.Vector3(0,0,S.z+1).project(camera);
+  const ax=(p1.x-p0.x)*renderer.domElement.clientWidth/2;
+  const ay=-(p1.y-p0.y)*renderer.domElement.clientHeight/2;
+  const len2=ax*ax+ay*ay;
+  if(len2<1e-6) return 0;
+  return (dx*ax+dy*ay)/len2;
+}
+renderer.domElement.addEventListener('pointerdown', e=>{
+  touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(touches.size===1){
+    lastX=e.clientX; lastY=e.clientY;
+    if(S.mode==='move' && pickMagnet(e)){
+      S.dragging=true; S.auto=false;
+      $('btnAuto').querySelector('.st').textContent='OFF'; $('btnAuto').classList.add('off');
+    } else dragging=true;
+  } else { dragging=false; S.dragging=false; pinchPrev=pinchSpan(); }
+});
+function endPointer(e){ touches.delete(e.pointerId); dragging=false; S.dragging=false; pinchPrev=0; }
+addEventListener('pointerup',endPointer);
+addEventListener('pointercancel',endPointer);
+addEventListener('pointermove', e=>{
+  if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(touches.size>=2){
+    const d=pinchSpan();
+    if(pinchPrev>0&&d>0){ setDist(camDist*(pinchPrev/d)); userZoomed=true; }
+    pinchPrev=d; return;
+  }
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(S.dragging){
+    S.z=Math.max(Z_NEAR,Math.min(Z_FAR, S.z+screenAxisDelta(dx,dy)));
+    $('posSlider').value=sliderFromZ(S.z);
+    const v=+$('posSlider').value;
+    $('posVal').textContent=(v<25)?'とても近い':((v<60)?'近い':'遠い');
+  }else if(dragging){
+    camAz=Math.max(-1.4,Math.min(1.4,camAz-dx*0.006));
+    camEl=Math.max(-0.1,Math.min(1.0,camEl+dy*0.005));
+  }
+  lastX=e.clientX; lastY=e.clientY;
+});
+addEventListener('wheel', e=>{ setDist(camDist+e.deltaY*0.004); userZoomed=true; });
+addEventListener('resize', ()=>{
+  camera.aspect=VW()/VH(); camera.updateProjectionMatrix();
+  renderer.setSize(VW(),VH()); autoFit(); refreshPanelRects();
+});
+
+/* ---------- メインループ ---------- */
+const clock=new THREE.Clock();
+let gTimer=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);
+  // 自動で出し入れ
+  if(S.mode==='move' && S.auto){
+    S.autoT+=dt*1.25;
+    S.z=Z_NEAR+0.15+(Z_FAR-Z_NEAR-0.3)*(0.5-0.5*Math.cos(S.autoT));
+    $('posSlider').value=sliderFromZ(S.z);
+  }
+  S.emf=computeEmf(dt);
+  // 針は少し遅れて動く（実物の検流計に近づける）
+  S.needle += (Math.max(-1.2,Math.min(1.2,S.emf)) - S.needle)*Math.min(1,dt*11);
+  if(Math.abs(S.needle)<0.002) S.needle=0;
+  updateScene(dt);
+  updateLabelVisibility(dt);
+  gTimer+=dt;
+  if(gTimer>0.03){
+    gTimer=0;
+    HIST.push(S.needle);
+    if(HIST.length>200) HIST.shift();
+    drawGraph();
+  }
+  camera.position.set(
+    camTarget.x+camDist*Math.cos(camEl)*Math.sin(camAz),
+    camTarget.y+camDist*Math.sin(camEl),
+    camTarget.z+camDist*Math.cos(camEl)*Math.cos(camAz));
+  camera.lookAt(camTarget);
+  renderer.render(scene,camera);
+}
+
+/* ---------- 初期化 ---------- */
+const params=new URLSearchParams(location.search);
+if(params.get('skip')==='1') $('start').style.display='none';
+if(params.get('mode')==='gen') setMode('gen'); else setMode('move');
+if(params.get('pole')==='-1') S.pole=-1;
+if(params.get('turns')==='2') $('btnTurns').click();
+if(params.get('strong')==='1') $('btnStrong').click();
+if(params.get('auto')==='1') $('btnAuto').click();
+if(params.get('spin')==='1') $('btnSpin').click();
+if(params.get('lenz')==='1') $('btnLenz').click();
+if(params.get('z')) S.z=Math.max(Z_NEAR,Math.min(Z_FAR,+params.get('z')));
+if(params.get('quiz')==='1') setTimeout(startQuiz,300);
+$('posSlider').value=sliderFromZ(S.z);
+$('spinSlider').oninput.call($('spinSlider'));
+registerLabels();
+refreshPanelRects();
+autoFit();
+S.prevZ=S.z;
+updateScene(0);
+animate();
+</script>
+</body>
+</html>
